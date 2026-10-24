@@ -1,0 +1,902 @@
+<title>The Cabin Trail</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #120d06; --surface: #241808; --surface-2: #321f0a;
+  --border: #6b4820; --hi: #c8a45a; --text: #f0e2c4; --muted: #9a7848;
+  --px: 'Press Start 2P', monospace; color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--text); font-family: var(--px);
+  min-height: 100%; display: flex; justify-content: center; align-items: flex-start;
+  padding-block: 28px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { width: 100%; max-width: 520px; }
+.pbox {
+  background: var(--surface); border: 4px solid var(--hi);
+  box-shadow: inset 2px 2px 0 var(--surface-2), inset -2px -2px 0 #0a0804, 4px 4px 0 #0a0804;
+  padding: 24px 20px; margin-bottom: 16px;
+}
+.screen { display: none; }
+.screen.active { display: block; animation: fadein .2s ease; }
+@keyframes fadein { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .screen.active { animation: none; } }
+.intro-trees { display:flex; justify-content:center; gap:8px; margin-bottom:20px; }
+.game-title { font-size:clamp(12px,4vw,20px); color:var(--hi); text-align:center; line-height:1.9; margin-bottom:20px; text-shadow:3px 3px 0 #1a0e04; letter-spacing:2px; }
+.intro-copy { font-size:8px; line-height:2.5; color:var(--muted); text-align:center; margin-bottom:28px; }
+.intro-copy em { color:var(--text); font-style:normal; }
+.scene-banner { padding:14px 16px 14px; margin-bottom:0; }
+.scene-cv { display:block; width:100%; height:auto; image-rendering:pixelated; image-rendering:crisp-edges; }
+.prog-meta { display:flex; justify-content:space-between; font-size:6px; color:var(--muted); margin-bottom:6px; }
+.prog-track { height:8px; background:var(--surface); border:2px solid var(--border); margin-bottom:0; overflow:hidden; }
+.prog-fill { height:100%; background:var(--hi); transition:width .5s steps(10); }
+.scene { font-size:8px; line-height:2.3; color:var(--muted); margin-bottom:14px; padding-bottom:14px; border-bottom:2px solid var(--border); }
+.question { font-size:9px; line-height:2.2; color:var(--text); margin-bottom:22px; }
+.opt { display:block; width:100%; background:var(--surface); border:2px solid var(--border); color:var(--text); font-family:var(--px); font-size:8px; padding:13px 14px; text-align:left; cursor:pointer; margin-bottom:10px; line-height:2; transition:background .05s,border-color .05s; }
+.opt:hover { background:var(--surface-2); border-color:var(--hi); color:var(--hi); }
+.opt:active { transform:translate(2px,2px); }
+.opt.selected { background:var(--hi); color:var(--bg); border-color:var(--hi); pointer-events:none; }
+.opt-lbl { color:var(--hi); margin-right:10px; }
+.opt.selected .opt-lbl { color:var(--bg); }
+.result-eyebrow { font-size:6px; color:var(--muted); text-align:center; letter-spacing:2px; margin-bottom:10px; }
+.result-name { font-size:clamp(10px,3vw,15px); color:var(--hi); text-align:center; line-height:2; margin-bottom:20px; text-shadow:2px 2px 0 #1a0e04; }
+.cabin-cv { display:block; margin:0 auto 20px; image-rendering:pixelated; image-rendering:crisp-edges; border:3px solid var(--border); }
+.result-desc { font-size:7px; line-height:2.5; color:var(--text); text-align:center; margin-bottom:28px; }
+.pbtn { font-family:var(--px); cursor:pointer; border:3px solid var(--hi); box-shadow:3px 3px 0 #0a0804; }
+.pbtn:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #0a0804; }
+.pbtn-gold { background:var(--hi); color:var(--bg); padding:14px 28px; font-size:9px; display:block; margin:0 auto; }
+.pbtn-gold:hover { background:#f0e2c4; }
+.pbtn-sm { background:var(--surface-2); color:var(--text); padding:11px 20px; font-size:7px; display:block; margin:0 auto; }
+.pbtn-sm:hover { background:var(--border); }
+</style>
+
+<!-- INTRO -->
+<div id="s-intro" class="screen active wrap">
+  <div class="pbox" style="text-align:center">
+    <div class="intro-trees">
+      <canvas id="t1" width="24" height="52" style="image-rendering:pixelated"></canvas>
+      <canvas id="t2" width="24" height="52" style="image-rendering:pixelated"></canvas>
+      <canvas id="t3" width="24" height="52" style="image-rendering:pixelated"></canvas>
+    </div>
+    <div class="game-title">THE<br>CABIN<br>TRAIL</div>
+    <p class="intro-copy">
+      You've been away for days.<br>
+      Somewhere ahead, deep in<br>
+      the woods, <em>your cabin waits.</em><br><br>
+      But first — the path has<br>
+      questions for you.<br><br>
+      Choose wisely, traveler.
+    </p>
+    <button class="pbtn pbtn-gold" onclick="startQuiz()">▶ &nbsp; BEGIN</button>
+  </div>
+</div>
+
+<!-- QUESTION -->
+<div id="s-question" class="screen wrap">
+  <div class="pbox scene-banner">
+    <canvas id="scene-cv" class="scene-cv" width="480" height="96"></canvas>
+  </div>
+  <div style="padding:12px 0 0; margin-bottom:16px;">
+    <div class="prog-meta">
+      <span id="q-lbl">Q 1 / 8</span>
+      <span id="q-path-lbl"></span>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="prog" style="width:0%"></div></div>
+  </div>
+  <div class="pbox">
+    <div class="scene" id="q-scene"></div>
+    <div class="question" id="q-text"></div>
+    <div id="q-opts"></div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="s-result" class="screen wrap">
+  <div class="pbox" style="text-align:center">
+    <div class="result-eyebrow">YOUR CABIN AWAITS</div>
+    <canvas id="cabin-cv" class="cabin-cv" width="160" height="120"></canvas>
+    <div class="result-eyebrow" style="margin-bottom:6px">YOUR STYLE IS</div>
+    <div class="result-name" id="r-name"></div>
+    <div class="result-desc" id="r-desc"></div>
+    <button class="pbtn pbtn-sm" onclick="resetQuiz()">↺ &nbsp; PLAY AGAIN</button>
+  </div>
+</div>
+
+<script>
+const BLANK={MIN:0,JAP:0,WAB:0,COT:0,COA:0,MAX:0,IND:0,DAR:0};
+let scores={...BLANK}, userPath=null, seq=[], qi=0, currentScene='forest';
+
+const Q={
+  q1:{scene:"You've been traveling for hours. The road splits into three. The air smells different down each path.",q:"Which way do you go?",opts:[
+    {t:"Down a quiet lane lit by paper lanterns, where the sound of water follows you",s:"JAP"},
+    {t:"Along an overgrown trail where old stone walls are slowly swallowed by moss",s:"WAB"},
+    {t:"Toward the cliffs, where the wind is sharp and you can hear the sea below",s:"COA"}]},
+  q2:{scene:"Night is falling. Three houses glow in the distance, each belonging to a different owner.",q:"Where do you choose to sleep?",path:true,opts:[
+    {t:"With the fairy sisters — a rose-covered cottage, jam jars on the sill, firelight inside",s:"COT",p:"A"},
+    {t:"With the woodcutter — a rundown warehouse, exposed pipes, brick still warm from the day",s:"IND",p:"B"},
+    {t:"With the witch — her room stacked with tapestries, mismatched rugs, and a hundred collected things",s:"MAX",p:"C"}]},
+  q3a:{tag:"PATH A · THE FAIRY SISTERS",scene:"The sisters wake you with singing. Each one needs a hand.",q:"Who do you help?",opts:[
+    {t:"The eldest — wrapping handmade wooden utensils in linen, one by one, for the market stall",s:"JAP"},
+    {t:"The second sister — patching the garden wall with river stones. It'll never be even, and that's fine",s:"WAB"},
+    {t:"The youngest — hauling old iron pots from the cellar to oil and restore",s:"IND"}]},
+  q4a:{tag:"PATH A · THE FAIRY SISTERS",scene:"Once chores are done, the sisters take you to a market hidden in a meadow clearing for lunch.",q:"What do you feel like eating?",opts:[
+    {t:"A paper cone of fried fish and sea herbs, eaten walking along the meadow's edge",s:"COA"},
+    {t:"A lone stall serving only one thing — black bread, hard cheese, and ink-dark plum jam",s:"DAR"},
+    {t:"A vendor with no table, just baskets overflowing with every colour of food you've ever seen",s:"MAX"}]},
+  q5a:{tag:"PATH A · THE FAIRY SISTERS",scene:"The youngest sister presses something into your hand before you leave.",q:"What is it?",opts:[
+    {t:"A single clear vial of spring water — 'for when you need stillness,' she says",s:"MIN"},
+    {t:"A worn field journal, already half full of pressed wildflowers and pencil sketches",s:"COT"},
+    {t:"A small brass compass, dented but true — 'it'll always point you somewhere useful'",s:"IND"}]},
+  q6a:{tag:"PATH A · THE FAIRY SISTERS",scene:"Before heading back, you rest by a still forest stream. The air smells like green things.",q:"What do you do?",opts:[
+    {t:"Sit quietly and watch the light shift slowly across the surface",s:"JAP"},
+    {t:"Notice a mossy stone with a crack running through it — it's beautiful like this",s:"WAB"},
+    {t:"Kick off your shoes and wade in, feeling the cold current",s:"COA"}]},
+  q7a:{tag:"PATH A · THE FAIRY SISTERS",scene:"You gather your things and leave for your cabin. The sisters wave from the gnarled oak.",q:"The eldest calls out one last thing. What does she say?",opts:[
+    {t:"'Every room needs one true thing. Just one.'",s:"MIN"},
+    {t:"'Fill your home with everything that makes you feel alive.'",s:"MAX"},
+    {t:"'Let the dark in too — that's where the good stories live.'",s:"DAR"}]},
+  q3b:{tag:"PATH B · THE WOODCUTTER",scene:"The woodcutter wakes you before sunrise. He needs a hand.",q:"What are you doing?",opts:[
+    {t:"Stacking firewood in perfect, even columns against the barn wall",s:"MIN"},
+    {t:"Gathering frost-covered herbs from the garden in the early quiet",s:"COT"},
+    {t:"Loading his cart with a jumbled mix of tools, furs, and traded goods",s:"MAX"}]},
+  q4b:{tag:"PATH B · THE WOODCUTTER",scene:"He takes you through a working town. One thing catches your eye.",q:"What is it?",opts:[
+    {t:"A boat builder's yard — sea-weathered planks and the smell of salt and resin",s:"COA"},
+    {t:"A locked archive building with iron letters above the door: 'Est. 1847'",s:"DAR"},
+    {t:"A joinery workshop where every tool has its own marked place on the wall",s:"JAP"}]},
+  q5b:{tag:"PATH B · THE WOODCUTTER",scene:"You wait by an iron bridge while he finishes a job.",q:"What holds your attention?",opts:[
+    {t:"The way the bridge's shadow falls in a clean, exact line across the water",s:"JAP"},
+    {t:"Rust blooming across the ironwork in patterns that look almost deliberate",s:"WAB"},
+    {t:"A flat-bottomed boat drifting past, laundry drying on a line strung across it",s:"COA"}]},
+  q6b:{tag:"PATH B · THE WOODCUTTER",scene:"Before you part, he hands you something for the road.",q:"What is it?",opts:[
+    {t:"A folded cloth with one smooth, unmarked stone inside — 'keep it in your pocket'",s:"MIN"},
+    {t:"A battered tin cup, dented and scorched — 'it's held up through everything'",s:"WAB"},
+    {t:"A short iron chisel — 'always useful, never decorative'",s:"IND"}]},
+  q7b:{tag:"PATH B · THE WOODCUTTER",scene:"He points you toward the road. Before turning back, he says one last thing.",q:"What does he say?",opts:[
+    {t:"'Don't rush it. The best things are slow-built and well-loved.'",s:"COT"},
+    {t:"'Take everything the world offers you — you can sort it later.'",s:"MAX"},
+    {t:"'The old buildings know things. Pay attention to them.'",s:"DAR"}]},
+  q3c:{tag:"PATH C · THE WITCH",scene:"The witch hands you a list before dawn. You go alone.",q:"What are you collecting?",opts:[
+    {t:"One perfect white candle from the candlemaker — no scent, no decoration",s:"MIN"},
+    {t:"Wildberry bundles and fresh beeswax from the herb stall",s:"COT"},
+    {t:"Iron filings and black thread from the metalworker's back door",s:"IND"}]},
+  q4c:{tag:"PATH C · THE WITCH",scene:"She takes you to a bazaar that exists only between midnight and dawn.",q:"Something makes you freeze mid-step. What is it?",opts:[
+    {t:"A stall draped in sailcloth selling only light — lanterns of every shape and size",s:"COA"},
+    {t:"A locked case of handwritten spell journals, centuries old, barely holding together",s:"DAR"},
+    {t:"A stall so layered with colour and pattern and hanging things you can't see the back of it",s:"MAX"}]},
+  q5c:{tag:"PATH C · THE WITCH",scene:"She stops at a crumbled stone structure to gather something. You wait.",q:"What do you notice?",opts:[
+    {t:"The way the remaining walls frame the open sky — it feels designed this way",s:"JAP"},
+    {t:"Lichen slowly swallowing carved inscriptions — patient and inevitable",s:"WAB"},
+    {t:"A gap in the stones where the sea glitters in the far distance",s:"COA"}]},
+  q6c:{tag:"PATH C · THE WITCH",scene:"Back at the cottage, the witch lights the fire and starts work. You watch her prepare something.",q:"What is she making?",opts:[
+    {t:"A single-ingredient tincture — one herb, steeped in clear water. 'Less is the whole point,' she mutters",s:"MIN"},
+    {t:"A slow-simmered brew from cracked bark and bruised petals — it smells like rain and old wood",s:"WAB"},
+    {t:"A precise formula measured on small iron scales — seven drops of this, two grams of that",s:"IND"}]},
+  q7c:{tag:"PATH C · THE WITCH",scene:"At first light, the witch is gone. On the table: the potion she made, still warm, and a note beside it. Three words.",q:"What does it say?",opts:[
+    {t:"'Craft. Quiet. Purpose.'",s:"JAP"},
+    {t:"'Grow something. Tend it.'",s:"COT"},
+    {t:"'Knowledge is decoration.'",s:"DAR"}]},
+  q8:{scene:"You push through the last of the trees. There it is — your cabin. Smoke rising, light in the window.",q:"What do you feel?",opts:[
+    {t:"Relief — you know it's calm inside, just the way you left it",s:"MIN"},
+    {t:"A deep pull toward something still and storied — it's been waiting for you",s:"DAR"},
+    {t:"The solid satisfaction of something built to last — honest and real",s:"IND"}]}
+};
+
+const RESULTS={
+  MIN:{name:"Minimalist",       desc:"Your cabin is an exhale.\nClean surfaces, considered\nobjects, space that does\nthe work. Nothing here\nby accident — everything\nhere on purpose.",    draw:drawMin},
+  JAP:{name:"Japandi / Muji",   desc:"Your cabin is made with\ncare. Natural wood, honest\nmaterials, a quietness\nborn from craft.\nBeauty that earns\nits place.",             draw:drawJap},
+  WAB:{name:"Wabi-sabi",        desc:"Your cabin tells time.\nWorn textures, imperfect\nedges, a patina that\nonly comes from living.\nNothing precious here —\neverything is real.", draw:drawWab},
+  COT:{name:"Cottagecore",      desc:"Your cabin is a garden\nthat grew inside.\nHandmade things, beloved.\nIt smells like bread,\nlavender, and somewhere\nyou truly belong.",    draw:drawCot},
+  COA:{name:"Coastal",          desc:"Your cabin is wide open.\nSalt air, linen, bleached\nwood and light that\nmoves all day. A\npermanent holiday you\nnever have to leave.", draw:drawCoa},
+  MAX:{name:"Maximalist / Boho",desc:"Your cabin is alive.\nEvery surface holds a\nstory, every corner\nsurprises. Color, texture,\ncollected things — a\nportrait of everywhere.", draw:drawMax},
+  IND:{name:"Industrial",       desc:"Your cabin doesn't\napologize. Raw materials,\nhonest structure, function\nmade beautiful. The\nbones are showing\nand they're magnificent.",draw:drawInd},
+  DAR:{name:"Dark Academia",    desc:"Your cabin is a\nsanctuary. Rich wood,\ncandlelight, books on\nevery surface. Atmospheric,\nlayered, made for those\nwho feel everything.",   draw:drawDar}
+};
+
+const Q_SCENE={
+  q1:'forest', q2:'three_houses',
+  q3a:'cottage_ext', q4a:'meadow_mkt', q5a:'meadow_mkt', q6a:'stream', q7a:'cottage_ext',
+  q3b:'warehouse',   q4b:'town_street', q5b:'iron_bridge', q6b:'town_street', q7b:'town_street',
+  q3c:'night_errand',q4c:'bazaar',      q5c:'ruins',       q6c:'witch_cottage',q7c:'witch_cottage',
+  q8:'cabin', result:'cabin'
+};
+
+// ─── LOGIC ────────────────────────────────────────────────────
+function startQuiz(){scores={...BLANK};userPath=null;seq=['q1','q2'];qi=0;renderQ();}
+
+function pick(opt,btn){
+  btn.classList.add('selected');
+  document.querySelectorAll('.opt').forEach(b=>b.style.pointerEvents='none');
+  scores[opt.s]++;
+  if(opt.p){
+    userPath=opt.p;
+    const paths={A:['q3a','q4a','q5a','q6a','q7a'],B:['q3b','q4b','q5b','q6b','q7b'],C:['q3c','q4c','q5c','q6c','q7c']};
+    seq=['q1','q2',...paths[opt.p],'q8'];
+  }
+  qi++;
+  const isResult=qi>=seq.length;
+  const nextKey=isResult?'result':seq[qi];
+  const nextScene=Q_SCENE[nextKey]||'forest';
+  setTimeout(()=>{ walkOnScene(currentScene,nextScene,()=>{ if(isResult)showResult();else renderQ(); }); },120);
+}
+
+function renderQ(){
+  const k=seq[qi],d=Q[k],scene=Q_SCENE[k]||'forest';
+  currentScene=scene;
+  const cv=document.getElementById('scene-cv');
+  drawBg(cv.getContext('2d'),cv.width,cv.height,scene);
+  document.getElementById('q-lbl').textContent=`Q ${qi+1} / 8`;
+  document.getElementById('q-path-lbl').textContent=userPath?`PATH ${userPath}`:'';
+  document.getElementById('prog').style.width=`${(qi/8)*100}%`;
+  document.getElementById('q-scene').textContent=d.scene;
+  document.getElementById('q-text').textContent='▸ '+d.q;
+  const container=document.getElementById('q-opts');
+  container.innerHTML='';
+  ['A','B','C'].forEach((lbl,i)=>{
+    const opt=d.opts[i],btn=document.createElement('button');
+    btn.className='opt';
+    btn.innerHTML=`<span class="opt-lbl">${lbl})</span>${opt.t}`;
+    btn.onclick=()=>pick(opt,btn);
+    container.appendChild(btn);
+  });
+  show('s-question');
+}
+
+function showResult(){
+  document.getElementById('prog').style.width='100%';
+  let top='MIN',topS=0;
+  Object.entries(scores).forEach(([k,v])=>{if(v>topS){topS=v;top=k;}});
+  const R=RESULTS[top];
+  document.getElementById('r-name').textContent=R.name;
+  document.getElementById('r-desc').textContent=R.desc;
+  R.draw(document.getElementById('cabin-cv').getContext('2d'));
+  show('s-result');
+}
+
+function resetQuiz(){show('s-intro');}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+// ─── WALK ANIMATION ──────────────────────────────────────────
+let _walkId=null;
+function walkOnScene(fromScene,toScene,onDone){
+  if(_walkId){cancelAnimationFrame(_walkId);_walkId=null;}
+  const cv=document.getElementById('scene-cv'),ctx=cv.getContext('2d'),CW=cv.width,CH=cv.height;
+  let charX=-28,frame=0,frameT=0,lastTs=null;
+  function loop(ts){
+    if(!lastTs)lastTs=ts;
+    const dt=Math.min((ts-lastTs)/1000,0.05); lastTs=ts;
+    charX+=dt*185; frameT+=dt;
+    if(frameT>0.17){frame^=1;frameT=0;}
+    ctx.clearRect(0,0,CW,CH);
+    drawBg(ctx,CW,CH,charX>CW*0.52?toScene:fromScene);
+    drawChar(ctx,Math.round(charX),frame,CH);
+    if(charX<CW+32){_walkId=requestAnimationFrame(loop);}
+    else{_walkId=null;ctx.clearRect(0,0,CW,CH);drawBg(ctx,CW,CH,toScene);onDone();}
+  }
+  _walkId=requestAnimationFrame(loop);
+}
+
+// ─── SCENE BACKGROUNDS ───────────────────────────────────────
+// Canvas: 480 × 96
+function drawBg(ctx,W,H,scene){
+  const f=(c,x=0,y=0,w=W,h=H)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
+  const tri=(c,x1,y1,x2,y2,x3,y3)=>{ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.lineTo(x3,y3);ctx.closePath();ctx.fill();};
+  const stars=(arr)=>{ctx.fillStyle='#f0e8d0';for(let i=0;i<arr.length;i+=2)ctx.fillRect(arr[i],arr[i+1],2,2);};
+
+  // ── FOREST: Q1 — fork in the road ──
+  if(scene==='forest'){
+    f('#0d1a0d',0,0,W,56); f('#162412',0,56,W,H-56);
+    // Three diverging paths
+    ctx.fillStyle='#3a2610';
+    tri('#3a2610', 200,96, 240,56, 280,96); // center path
+    tri('#2e1e0a', 60,96,  130,56, 195,96); // left path
+    tri('#2e1e0a', 285,96, 355,56, 430,96); // right path
+    // Trees both sides
+    for(let x=-8,i=0;x<130;x+=28,i++){const h=18+[8,14,6,10,16,4,12][i%7];tri('#08130a',x+12,56-h,x,56,x+24,56);}
+    for(let x=365,i=0;x<W+20;x+=28,i++){const h=16+[12,6,14,8,10,16,4][i%7];tri('#08130a',x+12,56-h,x,56,x+24,56);}
+    // A few middle trees
+    tri('#0a1808',150,56-18,138,56,162,56);
+    tri('#0a1808',318,56-20,306,56,330,56);
+    // Paper lanterns on left path
+    ctx.fillStyle='#d09030';[72,78,100,68,128,74].forEach((v,i,a)=>{if(i%2===0){ctx.fillRect(a[i]-3,a[i+1]-8,2,8);ctx.fillStyle='#f0c050';ctx.fillRect(a[i]-5,a[i+1]-12,6,5);ctx.fillStyle='#d09030';}});
+    // Fireflies
+    ctx.fillStyle='#90d830';[60,30,180,20,290,25,400,18,440,32].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],2,2);});
+  }
+
+  // ── THREE HOUSES: Q2 — choose where to sleep ──
+  else if(scene==='three_houses'){
+    f('#060410',0,0,W,60); f('#0e0c18',0,60,W,H-60); f('#12101e',0,70,W,H-70);
+    stars([18,5,42,9,72,4,105,11,145,7,195,13,245,6,295,10,345,4,405,12,448,8,470,5]);
+    // Moon
+    ctx.fillStyle='#f0e890';ctx.beginPath();ctx.arc(455,18,11,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#060410';ctx.beginPath();ctx.arc(460,15,8,0,Math.PI*2);ctx.fill();
+
+    // ═══ HOUSE 1: FAIRY COTTAGE (left) — rose stone cottage ═══
+    // Stone body
+    f('#705848',20,38,88,24);
+    // Stone block texture
+    ctx.fillStyle='#604838';
+    for(let sx=22;sx<108;sx+=14)for(let sy=39;sy<62;sy+=8)ctx.fillRect(sx,sy,12,6);
+    // Pointed roof
+    tri('#4a2e18',20,38,64,14,108,38);
+    // Chimney + smoke
+    f('#5a3820',74,10,10,30); f('#2a1e0a',72,6,8,5); f('#201408',70,4,7,4);
+    // Window — warm amber glow (double pane)
+    f('#f8b030',28,42,22,14); f('#fff060',30,44,18,10);
+    f('#604838',38,42,2,14); f('#604838',28,49,22,2); // panes
+    // Jam jars on sill
+    f('#d09030',28,52,5,3); f('#c84040',35,52,4,3); f('#40a840',41,52,4,3);
+    // Second window
+    f('#e89820',75,43,16,12); f('#ffd840',77,45,12,8);
+    // Door — arched
+    f('#2a1808',57,50,14,12);
+    // Roses climbing left wall: pink/red clusters
+    ctx.fillStyle='#e85070';
+    [20,38,20,42,21,47,20,51,22,56,17,43,16,48].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],4,4);});
+    ctx.fillStyle='#c03050';
+    [19,40,18,45,20,50,21,55].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],2,2);});
+    // Roses right wall
+    ctx.fillStyle='#e85070';
+    [100,40,102,45,101,50,103,55,105,42,105,48].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],4,4);});
+    // Path (stepping stones)
+    ctx.fillStyle='#504030';
+    [56,63,58,67,60,71,59,75,58,79,57,83,56,87].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i]-4,a[i+1],10,5);});
+    // Warm glow around cottage
+    ctx.fillStyle='rgba(240,160,40,0.12)';ctx.fillRect(10,34,108,34);
+
+    // ═══ HOUSE 2: WAREHOUSE (center) — brick industrial ═══
+    // Brick body (tall)
+    f('#5a3020',168,22,144,40);
+    // Brick rows
+    ctx.fillStyle='#6a3820';
+    for(let row=0;row<7;row++){const off=row%2*9;for(let col=off;col<144;col+=18)ctx.fillRect(168+col,23+row*5,16,4);}
+    // Flat roof with parapet
+    f('#3a2010',165,18,150,6);
+    f('#4a2810',165,18,4,6); f('#4a2810',311,18,4,6);
+    ctx.fillStyle='#4a2810';[165,179,193,207,221,235,249,263,277,291,305].forEach(x=>ctx.fillRect(x,15,8,4));
+    // Chimneys
+    f('#4a2810',180,5,10,15); f('#4a2810',275,8,10,12);
+    // Smoke puffs
+    ctx.fillStyle='#302818';ctx.fillRect(177,2,9,4);ctx.fillRect(175,0,7,3);
+    ctx.fillStyle='#282010';ctx.fillRect(272,5,9,4);
+    // Large industrial door (dark recess)
+    f('#1a0e08',215,34,62,28);
+    ctx.fillStyle='#2a1808';for(let dp=0;dp<6;dp++)ctx.fillRect(215,34+dp*4,62,3);
+    // Pipe on left exterior
+    ctx.fillStyle='#808888';ctx.fillRect(168,20,5,42);ctx.fillRect(162,26,12,6);ctx.fillRect(162,38,12,5);
+    // Lit windows — orange warm
+    f('#d09030',173,26,24,12); f('#f0c060',175,28,20,8);
+    f('#d09030',290,27,22,11); f('#f0c060',292,29,18,8);
+    // Iron stairs on right
+    ctx.fillStyle='#607878';ctx.fillRect(306,28,6,34);
+    ctx.fillStyle='#506070';for(let st=0;st<7;st++)ctx.fillRect(296,30+st*5,12,3);
+    // Cart/barrel outside
+    f('#6a4020',330,52,20,10); ctx.fillStyle='#5a3010';for(let c=0;c<3;c++)ctx.fillRect(332+c*6,52,4,10);
+    // Orange glow
+    ctx.fillStyle='rgba(200,120,30,0.1)';ctx.fillRect(160,18,152,46);
+
+    // ═══ HOUSE 3: WITCH'S COTTAGE (right) — dark, mysterious ═══
+    // Dark stone body
+    f('#1e1628',358,30,104,32);
+    // Stone texture (dark)
+    ctx.fillStyle='#160e20';for(let sx=360;sx<462;sx+=16)for(let sy=31;sy<62;sy+=8)ctx.fillRect(sx,sy,14,6);
+    // Very tall pointed roof
+    tri('#100818',358,30,410,4,462,30);
+    // Extra tall spire
+    tri('#080410',406,4,410,0,414,4);
+    // Second smaller peak
+    tri('#120a1c',380,30,395,18,410,30);
+    // Main window — purple mystical glow + tapestries
+    f('#7020b0',366,35,28,18); f('#9040d0',368,37,24,14); f('#c060f0',370,39,20,10);
+    ctx.fillStyle='#8030b0';ctx.fillRect(379,35,2,18);ctx.fillRect(366,44,28,2); // panes
+    // Tapestry strips over window
+    ctx.fillStyle='rgba(180,40,200,0.3)';ctx.fillRect(366,34,8,18);
+    ctx.fillStyle='rgba(60,20,180,0.3)';ctx.fillRect(376,34,8,18);
+    // Second window — books/amber
+    f('#402080',418,36,20,14); f('#6030a0',420,38,16,10);
+    // Stacked book shapes in window
+    ctx.fillStyle='#802060';ctx.fillRect(420,42,4,6);ctx.fillStyle='#206080';ctx.fillRect(425,41,3,7);ctx.fillStyle='#806020';ctx.fillRect(429,43,5,5);
+    // Door — arched dark
+    f('#0a0612',393,48,20,14);
+    // Hanging objects on door
+    ctx.fillStyle='#604080';ctx.fillRect(397,46,2,8);ctx.fillStyle='#402060';ctx.fillRect(403,47,2,6);
+    // Cauldron smoke/glow from chimney
+    f('#241828',420,10,8,22);
+    ctx.fillStyle='#301a38';ctx.fillRect(417,7,8,4);ctx.fillRect(415,5,7,3);ctx.fillRect(413,3,6,3);
+    // Purple glow aura
+    ctx.fillStyle='rgba(130,30,190,0.15)';ctx.fillRect(348,26,124,40);
+
+    // Three paths from ground
+    ctx.fillStyle='#100c1a';
+    tri('#100c1a',30,96,64,62,100,96);   // left: to cottage
+    tri('#100c1a',200,96,238,62,276,96); // center: to warehouse
+    tri('#100c1a',365,96,408,62,452,96); // right: to witch
+  }
+
+  // ── FAIRY COTTAGE EXTERIOR: Q3A, Q7A ──
+  else if(scene==='cottage_ext'){
+    // Soft morning sky
+    f('#c8dca0',0,0,W,20); f('#e0d880',0,12,W,16); f('#e8e090',0,20,W,12);
+    f('#70a838',0,32,W,H-32); f('#88c050',0,36,W,H-36);
+    // Garden path
+    f('#b8a060',0,60,W,H-60);
+    // Stone cottage (larger, detailed)
+    f('#706050',140,24,200,40);
+    // Stone texture
+    ctx.fillStyle='#605040';for(let sx=142;sx<340;sx+=16)for(let sy=25;sy<64;sy+=9)ctx.fillRect(sx,sy,14,7);
+    // Thatched roof
+    tri('#7a5828',140,24,240,4,340,24);
+    // Roof thatch lines (pixel-stepped)
+    ctx.fillStyle='#6a4820';for(let rx=162;rx<318;rx+=20){const dx=240-rx,dy=20;const steps=6;for(let s=0;s<steps;s++){const px2=Math.round(rx+dx*s/steps),py2=Math.round(24-dy*s/steps);ctx.fillRect(px2,py2,3,2);}}
+    // Chimney + smoke
+    f('#5a3820',270,5,12,22); ctx.fillStyle='#4a3018';ctx.fillRect(268,2,10,4);ctx.fillRect(266,0,8,3);
+    // Big front window — warm light, flower box
+    f('#f8b030',158,30,36,22); f('#fff870',160,32,32,18);
+    ctx.fillStyle='#705848';ctx.fillRect(175,30,2,22);ctx.fillRect(158,41,36,2);
+    // Flower box on sill
+    f('#a07040',156,50,40,5);
+    ctx.fillStyle='#e04060';[159,164,169,174,179,184,189].forEach(x=>ctx.fillRect(x,44,5,8));
+    ctx.fillStyle='#e87030';[162,172,182,192].forEach(x=>ctx.fillRect(x,44,4,6));
+    // Second window
+    f('#f0a820',256,32,30,20); f('#ffe840',258,34,26,16);
+    ctx.fillStyle='#705848';ctx.fillRect(270,32,2,20);ctx.fillRect(256,42,30,2);
+    // Door (arched, wood)
+    f('#5a3820',210,42,38,22);
+    ctx.fillStyle='#6a4828';for(let dr=0;dr<4;dr++)ctx.fillRect(212,43+dr*5,34,4);
+    ctx.fillStyle='#d09030';ctx.fillRect(244,53,4,4); // door knob
+    // Roses ALL over the walls
+    ctx.fillStyle='#e84060';
+    [140,24,140,30,140,36,140,42,140,48,140,54,140,60,
+     148,26,152,24,156,28,144,38,146,44,142,50,148,56,
+     330,26,334,22,338,26,330,32,334,38,330,44,336,50,330,56].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],5,5);});
+    ctx.fillStyle='#c02848';
+    [142,28,144,34,143,40,141,46,141,52,332,28,333,34,332,40,333,46].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],3,3);});
+    // Roses growing over top of roof too
+    ctx.fillStyle='#e84060';[200,22,220,18,240,14,260,18,280,22].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],6,6);});
+    // Garden: flowers, stepping stones
+    ctx.fillStyle='#d03060';[30,56,60,50,80,58,100,52,430,54,450,58,460,50].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],6,6);});
+    ctx.fillStyle='#40a840';[20,54,50,48,90,56,110,50,420,52,445,56].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],5,8);});
+    // Stepping stones to door
+    ctx.fillStyle='#908060';[196,65,212,70,224,75,218,82,222,88].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],20,7);});
+  }
+
+  // ── MEADOW MARKET: Q4A, Q5A ──
+  else if(scene==='meadow_mkt'){
+    // Blue sky
+    f('#a0d0f0',0,0,W,22); f('#c8e8ff',0,0,W,10);
+    // Horizon hill
+    f('#68b030',0,22,W,H-22); f('#80c840',0,28,W,H-28); f('#90d848',0,34,W,H-34);
+    f('#c8c050',0,58,W,H-58); // worn dirt path
+    // Four market stalls
+    const stalls2=[
+      {x:10, w:88, cap:'#e03040',fl:'#e87080'},
+      {x:108,w:96, cap:'#3060c0',fl:'#6090e0'},
+      {x:218,w:100,cap:'#c07020',fl:'#e09040'},
+      {x:330,w:90, cap:'#408030',fl:'#70b050'},
+      {x:430,w:50, cap:'#902080',fl:'#c050a0'},
+    ];
+    stalls2.forEach(({x,w,cap,fl})=>{
+      // Back cloth
+      ctx.fillStyle='#e8e0c8';ctx.fillRect(x,26,w,28);
+      // Canopy
+      ctx.fillStyle=cap;ctx.fillRect(x-4,20,w+8,8);
+      // Canopy scallop edge
+      ctx.fillStyle=fl;for(let sc=x-2;sc<x+w+2;sc+=10)ctx.fillRect(sc,27,8,4);
+      // Goods on table
+      ctx.fillStyle='#d0c090';ctx.fillRect(x,44,w,6);
+      // Produce/items in various colors
+      const cols=['#e84040','#f0a030','#40a840','#c0a020','#80c0f0','#e060a0'];
+      for(let gx=x+4;gx<x+w-8;gx+=10){ctx.fillStyle=cols[Math.floor((gx-x)/10)%cols.length];ctx.fillRect(gx,36,8,8);}
+      // Hanging items above table
+      for(let hx=x+6;hx<x+w-4;hx+=14){ctx.fillStyle=cols[Math.floor((hx-x)/14)%cols.length];ctx.fillRect(hx,22,4,8);}
+    });
+    // String lights between stalls
+    ctx.fillStyle='#fff880';
+    for(let lx=10;lx<W;lx+=14)ctx.fillRect(lx,18,3,3);
+    // Flowers in foreground
+    ctx.fillStyle='#e83068';[20,60,50,56,80,62,380,58,420,60,455,56].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],5,5);});
+    ctx.fillStyle='#f09030';[35,58,65,62,110,58,360,60,440,58].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],4,4);});
+    // Tiny people silhouettes
+    ctx.fillStyle='#2a1808';[130,46,180,44,280,46,340,44].forEach((v,i,a)=>{if(i%2===0){ctx.fillRect(a[i],a[i+1],4,8);ctx.fillRect(a[i]-1,a[i+1]-5,6,6);}});
+  }
+
+  // ── FOREST STREAM: Q6A ──
+  else if(scene==='stream'){
+    f('#1a2e14',0,0,W,48); f('#243c18',0,48,W,H-48);
+    // Trees both banks
+    for(let x=0;x<180;x+=30){const h=22+(x*7%16);tri('#0a180a',x+14,48-h,x,48,x+28,48);}
+    for(let x=310;x<W+30;x+=30){const h=20+(x*5%16);tri('#0a180a',x+14,48-h,x,48,x+28,48);}
+    // Stream — blue center band
+    f('#4090b8',140,44,200,H-44); f('#60b0d0',148,46,184,H-46); f('#80c8e8',156,50,168,H-50);
+    // Stream shimmer
+    ctx.fillStyle='#a0d8f0';[160,52,178,48,196,54,172,60,188,56].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],12,3);});
+    // Mossy stones in stream
+    ctx.fillStyle='#305828';ctx.fillRect(145,56,20,10);ctx.fillRect(305,54,18,10);
+    ctx.fillStyle='#488040';ctx.fillRect(148,58,14,6);ctx.fillRect(308,56,12,6);
+    ctx.fillStyle='#406830';ctx.fillRect(200,60,16,8);ctx.fillRect(250,58,14,8);
+    // Grassy banks
+    f('#2a4820',0,58,140,H-58); f('#2a4820',340,58,W-340,H-58);
+    // Dappled light on water
+    ctx.fillStyle='rgba(255,240,160,0.15)';ctx.fillRect(152,44,60,20);ctx.fillRect(240,46,40,16);
+    // Ferns/plants on bank
+    ctx.fillStyle='#40a030';
+    [10,54,25,50,50,56,80,52,100,58,380,52,400,56,430,50,460,54].forEach((v,i,a)=>{if(i%2===0){ctx.fillRect(a[i],a[i+1],3,14);ctx.fillRect(a[i]-6,a[i+1]+4,14,3);}});
+  }
+
+  // ── WOODCUTTER'S WAREHOUSE: Q3B ──
+  else if(scene==='warehouse'){
+    // Pre-dawn steel blue sky
+    f('#101828',0,0,W,50); f('#182030',0,38,W,12);
+    stars([20,6,55,10,90,5,140,12,200,7,280,11,350,6,420,13,460,8]);
+    // Ground
+    f('#201808',0,50,W,H-50); f('#2a1e0e',0,62,W,H-62);
+    // === LARGE WAREHOUSE BUILDING ===
+    // Brick main body
+    f('#5a3020',20,14,360,38);
+    // Brick texture
+    ctx.fillStyle='#683820';for(let row=0;row<7;row++){const off=row%2*10;for(let col=off;col<360;col+=20)ctx.fillRect(20+col,15+row*5,18,4);}
+    // Long flat roof with raised edge
+    f('#3a2010',18,10,364,6); ctx.fillStyle='#4a2810';for(let x=18;x<382;x+=16)ctx.fillRect(x,7,12,4);
+    // Tall chimneys
+    f('#4a2810',60,0,14,12); f('#4a2810',180,0,12,12); f('#4a2810',300,0,14,10);
+    ctx.fillStyle='#302010';ctx.fillRect(57,0,10,4);ctx.fillRect(177,0,9,4);ctx.fillRect(297,0,10,3);
+    // Smoke
+    ctx.fillStyle='#281e10';ctx.fillRect(55,0,8,4);ctx.fillRect(175,0,7,3);
+    // Large roll-door (dark open recess)
+    f('#180e06',100,28,80,24);
+    ctx.fillStyle='#241408';for(let dp=0;dp<5;dp++)ctx.fillRect(100,28+dp*4,80,3);
+    // Loading area with crates/barrels
+    f('#6a4020',190,40,30,12); f('#604018',198,40,22,12);
+    ctx.fillStyle='#5a3010';for(let b=0;b<3;b++)ctx.fillRect(191+b*8,40,6,12);
+    f('#5a3820',228,42,18,10); f('#5a3820',250,44,16,8);// barrels
+    // Pipes on exterior wall
+    ctx.fillStyle='#707880';ctx.fillRect(20,16,5,36);ctx.fillRect(14,22,14,5);ctx.fillRect(14,32,14,5);ctx.fillRect(14,42,14,5);
+    ctx.fillStyle='#606870';ctx.fillRect(368,16,5,34);
+    // Windows — orange glowing
+    f('#d09030',30,18,30,14); f('#f0c060',32,20,26,10);
+    f('#d09030',80,18,28,14); f('#e8b840',82,20,24,10);
+    f('#d09030',240,18,30,14); f('#f0c060',242,20,26,10);
+    f('#d09030',298,18,28,14); f('#e8b840',300,20,24,10);
+    ctx.fillStyle='#6a3820';ctx.fillRect(44,18,2,14);ctx.fillRect(30,25,30,2);ctx.fillRect(93,18,2,14);ctx.fillRect(80,25,28,2);
+    // Stacked firewood outside
+    f('#5a3820',390,38,70,14);
+    ctx.fillStyle='#3a2010';for(let fw=0;fw<8;fw++)ctx.fillRect(391+fw*8,38,6,14);
+    ctx.fillStyle='#4a2810';for(let fw=0;fw<7;fw++)ctx.fillRect(395+fw*8,36,6,4);
+    // Iron stairs
+    ctx.fillStyle='#607880';ctx.fillRect(370,18,6,34);
+    ctx.fillStyle='#506070';for(let st=0;st<7;st++)ctx.fillRect(360,20+st*5,14,3);
+    // Warm dawn glow
+    ctx.fillStyle='rgba(180,100,30,0.12)';ctx.fillRect(18,10,366,44);
+  }
+
+  // ── WORKING TOWN: Q4B, Q6B, Q7B ──
+  else if(scene==='town_street'){
+    f('#b8c8e0',0,0,W,18); f('#d0dce8',0,0,W,8);
+    f('#708898',0,18,W,32); // background buildings
+    // Row of buildings
+    ctx.fillStyle='#5a6870';ctx.fillRect(0,20,90,30);ctx.fillRect(0,20,90,30);
+    ctx.fillStyle='#684848';ctx.fillRect(92,14,110,36);
+    ctx.fillStyle='#706050';ctx.fillRect(208,18,100,32);
+    ctx.fillStyle='#586878';ctx.fillRect(314,16,120,34);
+    ctx.fillStyle='#5a5050';ctx.fillRect(438,22,W-438,28);
+    // Rooflines
+    tri('#485860',0,20,45,8,90,20);
+    tri('#583838',92,14,147,4,202,14);
+    // Building windows
+    ctx.fillStyle='#e8d080';
+    [10,24,30,24,50,24,10,32,30,32,50,32,100,18,120,18,140,18,160,18,100,26,120,26,140,26,
+     220,22,240,22,260,22,220,30,240,30,320,20,340,20,360,20,380,20,320,28,340,28,360,28,380,28].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],14,7);});
+    // Sign boards hanging
+    ctx.fillStyle='#9a7848';ctx.fillRect(96,26,44,10);ctx.fillStyle='#7a5830';ctx.fillRect(98,28,40,6);
+    ctx.fillStyle='#c0c8d0';ctx.fillRect(214,24,50,10);ctx.fillStyle='#a0a8b0';ctx.fillRect(216,26,46,6);
+    // Iron letters on archive: "Est. 1847"
+    ctx.fillStyle='#607080';ctx.fillRect(320,18,108,12);ctx.fillStyle='#d0d8e0';ctx.fillRect(322,20,104,8);
+    // Cobblestone ground
+    f('#484038',0,50,W,H-50);
+    ctx.fillStyle='#544840';for(let x=0;x<W;x+=20)for(let y=52;y<H;y+=10)ctx.fillRect(x+(y%20===2?10:0),y,18,8);
+    // Lamppost
+    ctx.fillStyle='#606870';ctx.fillRect(78,26,4,26);ctx.fillRect(72,24,16,5);
+    ctx.fillStyle='#f0c050';ctx.fillRect(74,22,12,4);ctx.fillStyle='#fff880';ctx.fillRect(76,23,8,2);
+    ctx.fillStyle='#606870';ctx.fillRect(310,22,4,30);ctx.fillRect(304,20,16,5);
+    ctx.fillStyle='#f0c050';ctx.fillRect(306,18,12,4);
+    // Boat builder's yard glimpse (right side)
+    f('#7898a8',390,26,90,26); f('#8090a0',392,28,86,20);
+    ctx.fillStyle='#a89070';ctx.fillRect(400,30,60,14); // boat hull
+    tri('#806850',400,30,430,22,460,30);
+    ctx.fillStyle='#d0c090';for(let pl=0;pl<8;pl++)ctx.fillRect(402+pl*7,30,5,14); // planks
+  }
+
+  // ── IRON BRIDGE: Q5B ──
+  else if(scene==='iron_bridge'){
+    f('#b0c8d8',0,0,W,30); f('#c8d8e8',0,0,W,14);
+    // Canal water (fills center band)
+    f('#4880a8',0,52,W,H-52); f('#60a0c0',0,56,W,H-56); f('#70b0d0',0,60,W,H-60);
+    // Water shimmer
+    ctx.fillStyle='#90c8e8';[20,62,60,58,100,64,140,60,200,62,260,58,320,64,380,60,430,62,460,58].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],30,3);});
+    // Banks
+    f('#4a5830',0,46,120,H-46); f('#4a5830',360,46,W-360,H-46);
+    f('#3a4828',0,50,100,H-50); f('#3a4828',380,50,W-380,H-50);
+    // === IRON BRIDGE ===
+    // Main deck
+    ctx.fillStyle='#607880';ctx.fillRect(80,42,320,10);
+    // Bridge railings (top)
+    ctx.fillStyle='#506870';ctx.fillRect(80,36,320,4);
+    // Truss verticals
+    ctx.fillStyle='#506070';
+    for(let x=90;x<400;x+=40){ctx.fillRect(x,36,4,16);ctx.fillRect(x+20,38,4,14);}
+    // Truss diagonals
+    ctx.fillStyle='#405868';
+    for(let x=90;x<380;x+=40){tri('#405868',x,52,x+4,36,x+24,52);tri('#405868',x+20,36,x+44,52,x+20,52);}
+    // Bridge side arches (below deck into water)
+    ctx.fillStyle='#4a6070';
+    ctx.beginPath();ctx.moveTo(80,52);ctx.quadraticCurveTo(200,70,320,52);ctx.lineTo(320,56);ctx.quadraticCurveTo(200,74,80,56);ctx.fill();
+    // Rivets / details
+    ctx.fillStyle='#607888';
+    for(let x=90;x<400;x+=40){ctx.fillRect(x-1,38,3,3);ctx.fillRect(x-1,49,3,3);}
+    // Flat-bottomed boat on water
+    f('#9a7840',160,64,100,16);
+    tri('#7a5830',160,64,210,56,260,64);
+    ctx.fillStyle='#b89060';for(let pl=0;pl<8;pl++)ctx.fillRect(162+pl*11,64,9,16);
+    // Laundry on line
+    ctx.fillStyle='#f0e8d8';ctx.fillRect(170,50,80,2); // line
+    ctx.fillStyle='#e84040';ctx.fillRect(174,44,10,8);
+    ctx.fillStyle='#4060c0';ctx.fillRect(188,44,10,8);
+    ctx.fillStyle='#e0c040';ctx.fillRect(202,44,10,8);
+    ctx.fillStyle='#40a840';ctx.fillRect(216,44,10,8);
+    ctx.fillStyle='#c040a0';ctx.fillRect(230,44,10,8);
+    // Rust spots on bridge
+    ctx.fillStyle='rgba(180,80,20,0.4)';ctx.fillRect(110,36,12,4);ctx.fillRect(200,40,8,6);ctx.fillRect(340,38,10,4);
+  }
+
+  // ── NIGHT ERRAND: Q3C — pre-dawn dark streets ──
+  else if(scene==='night_errand'){
+    f('#080610',0,0,W,50); f('#0c0818',0,50,W,H-50); f('#100c1c',0,64,W,H-64);
+    stars([14,5,38,9,65,4,100,8,150,5,200,11,260,6,320,9,380,5,440,12,468,7]);
+    // Dawn glow on horizon
+    f('#2a1408',0,44,W,8); f('#3a1c0a',0,46,W,6);
+    // Dark buildings
+    ctx.fillStyle='#0a0812';ctx.fillRect(0,18,80,34);ctx.fillRect(84,14,100,38);ctx.fillRect(196,20,90,32);ctx.fillRect(300,16,120,36);ctx.fillRect(432,22,W-432,30);
+    // Rooflines
+    tri('#080610',0,18,40,8,80,18); tri('#080612',84,14,134,4,184,14);
+    // Windows: candle-lit amber
+    ctx.fillStyle='#d09030';[10,22,30,22,10,30,30,30,90,18,110,18,130,18,90,26,110,26,210,24,230,24,210,32,230,32,310,20,330,20,350,20,310,28,330,28,310,28].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],12,7);});
+    ctx.fillStyle='#f0c060';[12,24,32,24,12,32,32,32,92,20,112,20,132,20].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],8,5);});
+    // Candlemaker's shop sign
+    f('#302018',96,26,50,10);ctx.fillStyle='#f0c050';ctx.fillRect(100,28,8,8); // candle icon
+    ctx.fillStyle='#f8e080';ctx.fillRect(102,24,4,6);
+    // Dark cobbles
+    f('#100c18',0,52,W,H-52);
+    ctx.fillStyle='#14101c';for(let x=0;x<W;x+=18)for(let y=54;y<H;y+=9)ctx.fillRect(x+(y%18===0?9:0),y,16,7);
+    // Street lamps (dim)
+    [80,200,350].forEach(x=>{ctx.fillStyle='#404850';ctx.fillRect(x,22,3,32);ctx.fillRect(x-5,20,13,5);ctx.fillStyle='#c09020';ctx.fillRect(x-3,18,9,4);ctx.fillStyle='#f0d050';ctx.fillRect(x-1,19,5,2);});
+  }
+
+  // ── NIGHT BAZAAR: Q4C — midnight market ──
+  else if(scene==='bazaar'){
+    f('#020108',0,0,W,44); f('#060412',0,44,W,H-44); f('#0a0818',0,60,W,H-60);
+    // Many stars + moon
+    stars([8,3,22,7,40,4,62,9,85,3,110,7,140,5,170,9,205,4,240,8,275,4,310,10,350,6,390,3,425,9,455,5,472,8]);
+    ctx.fillStyle='#f0e8a0';ctx.beginPath();ctx.arc(460,16,9,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#020108';ctx.beginPath();ctx.arc(465,13,7,0,Math.PI*2);ctx.fill();
+
+    // Six stalls with vivid canopies
+    const bzStalls=[
+      {x:0,  w:72, cap:'#c02030', fl:'#e04050', goods:['#f0a030','#e8c050','#c89020']},
+      {x:78, w:68, cap:'#2040b0', fl:'#4060d0', goods:['#80c0f0','#a0d0e0','#60a8f0']},
+      {x:152,w:76, cap:'#508020', fl:'#70a030', goods:['#80e040','#c0f060','#a0d040']},
+      {x:236,w:80, cap:'#702098', fl:'#9030c0', goods:['#e060e0','#c040c0','#f080f8']},
+      {x:324,w:72, cap:'#b05010', fl:'#d07020', goods:['#f0c030','#e8a020','#f8d040']},
+      {x:404,w:76, cap:'#108080', fl:'#20a0a0', goods:['#40d0c0','#20e0d0','#60c8c0']},
+    ];
+    bzStalls.forEach(({x,w,cap,fl,goods},si)=>{
+      // Back drape
+      ctx.fillStyle='#1a1228';ctx.fillRect(x,20,w,26);
+      // Hanging fabric strips
+      [cap,fl,cap].forEach((c,i)=>{ctx.fillStyle=c;ctx.fillRect(x+i*(w/3),20,w/3-1,24);});
+      // Canopy bar
+      ctx.fillStyle=cap;ctx.fillRect(x-4,16,w+8,6);
+      // Canopy drips
+      ctx.fillStyle=fl;for(let sc=x;sc<x+w;sc+=8)ctx.fillRect(sc,21,5,4);
+      // Table
+      ctx.fillStyle='#2a2030';ctx.fillRect(x,38,w,5);
+      // Goods
+      goods.forEach((g,gi)=>{
+        ctx.fillStyle=g;
+        for(let gx=x+4+gi*8;gx<x+w-4;gx+=goods.length*8){ctx.fillRect(gx,29,7,9);}
+      });
+      // Hanging lanterns above stall
+      const lc=['#f8e040','#f0a030','#e040a0','#40e0f0','#c040f0','#80f840'][si%6];
+      for(let lx=x+8;lx<x+w-4;lx+=18){
+        ctx.fillStyle='#806040';ctx.fillRect(lx,10,2,7);
+        ctx.fillStyle=lc;ctx.fillRect(lx-4,16,10,8);
+        ctx.fillStyle='#ffffff';ctx.fillRect(lx-1,18,4,4);
+      }
+    });
+    // String lights criss-crossing whole bazaar
+    ctx.fillStyle='#f8f060';for(let lx=4;lx<W;lx+=10)ctx.fillRect(lx,12,4,4);
+    ctx.fillStyle='#f0c040';for(let lx=8;lx<W;lx+=16)ctx.fillRect(lx,8,3,3);
+    // Extra floating lanterns
+    ctx.fillStyle='rgba(255,200,40,0.6)';[50,8,160,6,280,10,380,7,440,9].forEach((v,i,a)=>{if(i%2===0){ctx.beginPath();ctx.arc(a[i],a[i+1],5,0,Math.PI*2);ctx.fill();}});
+    // Dark cobble ground
+    f('#0a0816',0,44,W,H-44);
+    ctx.fillStyle='#100c1c';for(let x=0;x<W;x+=18)for(let y=46;y<H;y+=9)ctx.fillRect(x+(y%18===0?9:0),y,16,7);
+    // Crowd silhouettes
+    ctx.fillStyle='#080610';
+    [40,46,80,44,130,46,200,44,260,46,310,44,370,46,420,44,460,46].forEach((v,i,a)=>{if(i%2===0){ctx.fillRect(a[i],a[i+1],5,H-a[i+1]);ctx.fillRect(a[i]-2,a[i+1]-7,9,8);}});
+  }
+
+  // ── RUINS: Q5C ──
+  else if(scene==='ruins'){
+    f('#252830',0,0,W,42); f('#1e2228',0,0,W,18); f('#2a2e38',0,18,W,8);
+    // Ruined walls: multiple broken structures
+    ctx.fillStyle='#3a3830';ctx.fillRect(0,12,80,32);ctx.fillRect(155,8,110,36);ctx.fillRect(340,14,130,30);
+    ctx.fillStyle='#2e2c28';
+    // Crumbled tops and gaps
+    ctx.fillRect(0,10,28,4);ctx.fillRect(45,8,28,6);ctx.fillRect(60,12,12,4);
+    ctx.fillRect(158,6,30,4);ctx.fillRect(220,4,24,6);ctx.fillRect(245,8,20,4);
+    ctx.fillRect(344,10,20,6);ctx.fillRect(400,8,22,8);ctx.fillRect(440,12,20,5);
+    // Stone block texture
+    ctx.fillStyle='#444240';for(let sx=2;sx<80;sx+=16)for(let sy=13;sy<44;sy+=9)ctx.fillRect(sx,sy,14,7);
+    ctx.fillStyle='#404038';for(let sx=157;sx<265;sx+=18)for(let sy=9;sy<44;sy+=9)ctx.fillRect(sx,sy,16,7);
+    ctx.fillStyle='#3e3c38';for(let sx=342;sx<470;sx+=16)for(let sy=15;sy<44;sy+=9)ctx.fillRect(sx,sy,14,7);
+    // Arched openings (ruined windows/doorways)
+    ctx.fillStyle='#18161a';ctx.fillRect(20,20,30,24);ctx.fillRect(170,16,40,28);ctx.fillRect(355,20,35,24);
+    // Arch tops
+    tri('#18161a',20,20,35,12,50,20); tri('#18161a',170,16,190,8,210,16); tri('#18161a',355,20,372,12,390,20);
+    // Ground — overgrown rubble
+    f('#201e18',0,42,W,H-42); f('#2c2a22',0,56,W,H-56);
+    // Rubble/fallen stones
+    ctx.fillStyle='#3a3830';[90,42,110,44,130,40,275,42,295,44,310,40,480,42].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],20,8);});
+    // Lichen patches
+    ctx.fillStyle='#3a5028';[10,40,35,38,60,42,80,38,165,38,200,36,230,40,260,38,350,38,390,36,430,40,460,38].forEach((v,i,a)=>{if(i%2===0)ctx.fillRect(a[i],a[i+1],10,4);});
+    // Plants growing through cracks
+    ctx.fillStyle='#3a6028';[15,30,50,24,80,28,180,20,250,24,360,22,440,26].forEach((v,i,a)=>{if(i%2===0){ctx.fillRect(a[i],a[i+1],3,12);ctx.fillRect(a[i]-4,a[i+1]+4,10,3);}});
+    // Sky glimpse through arch (sea far right)
+    ctx.fillStyle='#6090b0';ctx.fillRect(172,18,36,22);
+    ctx.fillStyle='#80b0d0';ctx.fillRect(174,24,32,10);
+    ctx.fillStyle='#a0c8e0';ctx.fillRect(176,30,28,6);
+  }
+
+  // ── WITCH'S COTTAGE: Q6C, Q7C ──
+  else if(scene==='witch_cottage'){
+    f('#04020e',0,0,W,54); f('#080616',0,54,W,H-54); f('#0c0a1a',0,66,W,H-66);
+    stars([12,4,35,8,58,3,85,9,115,5,155,10,200,4,245,8,295,5,345,11,390,4,435,9,465,6]);
+    // Moon (full, eerie)
+    ctx.fillStyle='#f0e8a0';ctx.beginPath();ctx.arc(80,20,15,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#e8d880';ctx.fillRect(72,16,5,3);ctx.fillRect(82,22,4,3);ctx.fillRect(76,10,3,4); // surface marks
+    // === WITCH'S COTTAGE ===
+    // Dark stone body
+    f('#1a1224',130,22,220,34);
+    // Stone texture
+    ctx.fillStyle='#120e1c';for(let sx=132;sx<350;sx+=18)for(let sy=23;sy<56;sy+=9)ctx.fillRect(sx,sy,16,7);
+    // Tall jagged roof
+    tri('#0e0818',130,22,240,4,350,22);
+    // Second jagged peak
+    tri('#080512',215,22,240,8,265,22);
+    // Spire
+    f('#060310',236,0,8,6);tri('#040210',233,5,240,0,247,5);
+    // Chimneys
+    f('#1a1224',200,4,10,20); f('#1a1224',280,6,10,18);
+    // Cauldron smoke (greenish)
+    ctx.fillStyle='#182810';ctx.fillRect(196,0,10,6);ctx.fillRect(193,0,9,4);
+    ctx.fillStyle='#0e1c0a';ctx.fillRect(190,0,7,3);
+    // === MAIN WINDOW — fire glow, witch inside ===
+    f('#f06020',148,28,38,22); f('#f89030',150,30,34,18); f('#ffb040',152,32,30,14);
+    ctx.fillStyle='#1a1224';ctx.fillRect(166,28,3,22);ctx.fillRect(148,39,38,3);
+    // Witch silhouette in window
+    ctx.fillStyle='#0e0818';ctx.fillRect(156,32,6,16);ctx.fillRect(153,28,12,6); // body + head
+    ctx.fillRect(162,26,8,4); // hat brim
+    ctx.fillRect(164,20,4,8); // hat point
+    // Cauldron glow (green emanating from window bottom)
+    ctx.fillStyle='rgba(40,160,20,0.35)';ctx.fillRect(140,44,64,12);
+    ctx.fillStyle='rgba(60,200,30,0.2)';ctx.fillRect(128,38,88,20);
+    // === SIDE WINDOW — books, candles ===
+    f('#e05020',280,30,34,20);f('#f08030',282,32,30,16);
+    // Book spines in window
+    ctx.fillStyle='#8030a0';ctx.fillRect(284,34,5,14);
+    ctx.fillStyle='#20608a';ctx.fillRect(290,36,4,12);
+    ctx.fillStyle='#c89020';ctx.fillRect(295,34,4,14);
+    ctx.fillStyle='#a02030';ctx.fillRect(300,35,4,13);
+    ctx.fillStyle='#304a20';ctx.fillRect(305,36,5,12);
+    // Hanging tapestries outside cottage
+    ctx.fillStyle='#6020a0';ctx.fillRect(132,24,8,32);
+    ctx.fillStyle='#c04060';ctx.fillRect(142,24,6,24);
+    ctx.fillStyle='#2040a0';ctx.fillRect(342,24,8,32);
+    // Door — dark arched
+    f('#060310',226,40,28,16);
+    ctx.fillStyle='#120a1e';for(let dr=0;dr<3;dr++)ctx.fillRect(228,41+dr*5,24,4);
+    // Glow
+    ctx.fillStyle='rgba(240,80,20,0.12)';ctx.fillRect(120,18,230,42);
+    // Tree silhouettes flanking cottage
+    tri('#06040e',20,54,50,26,80,54);tri('#06040e',50,54,75,30,100,54);
+    tri('#06040e',380,54,420,22,460,54);tri('#06040e',400,54,440,28,480,54);
+    // Ground
+    f('#0c0a1a',0,54,120,H-54); f('#0c0a1a',360,54,W-360,H-54); f('#100e18',0,56,W,H-56);
+    ctx.fillStyle='rgba(230,60,20,0.1)';ctx.fillRect(130,40,220,16); // fire glow on ground
+  }
+
+  // ── CABIN APPROACH: Q8, result ──
+  else if(scene==='cabin'){
+    f('#1a1208',0,0,W,44); f('#4a2808',0,30,W,14); f('#7a3e14',0,36,W,8);
+    // Trees thinning to each side
+    [0,16,32,380,410,440,464].forEach((x,i)=>{const h=22+(i%3)*6;tri('#0a1208',x+12,44-h,x,44,x+24,44);});
+    tri('#081008',20,44-32,0,44,44,44);tri('#081008',448,44-28,436,44,480,44);
+    f('#201408',0,44,W,H-44); f('#3a2010',0,56,W,H-56);
+    // Clearing visible in center
+    f('#281a08',160,44,160,H-44);
+    // === CABIN IN CLEARING ===
+    const cx=210,cy=12;
+    // Cabin body
+    f('#3a2810',cx,cy+10,60,28);
+    // Log texture
+    ctx.fillStyle='#2e2008';for(let row=0;row<5;row++)ctx.fillRect(cx,cy+10+row*5,60,4);
+    // Roof
+    tri('#1e1008',cx-8,cy+12,cx+30,cy,cx+68,cy+12);
+    // Chimney
+    f('#2a1808',cx+42,cy+2,10,12);
+    // Chimney smoke — generous
+    ctx.fillStyle='#3a2a18';ctx.fillRect(cx+38,cy-2,12,5);ctx.fillRect(cx+36,cy-5,10,4);ctx.fillRect(cx+34,cy-8,9,4);
+    ctx.fillStyle='#2e2010';ctx.fillRect(cx+32,cy-10,8,3);ctx.fillRect(cx+30,cy-12,7,3);
+    // Windows — very warm golden glow
+    f('#f8c050',cx+4,cy+14,14,12); f('#fff880',cx+6,cy+16,10,8); // left window
+    f('#f8c050',cx+36,cy+14,14,12); f('#fff880',cx+38,cy+16,10,8); // right window
+    // Window glow (large halos)
+    ctx.fillStyle='rgba(255,200,50,0.25)';ctx.fillRect(cx-2,cy+10,24,18);
+    ctx.fillStyle='rgba(255,200,50,0.25)';ctx.fillRect(cx+30,cy+10,24,18);
+    // Door
+    f('#1a1006',cx+22,cy+22,14,16);
+    ctx.fillStyle='#d09030';ctx.fillRect(cx+33,cy+30,3,3); // door knob
+    // Warm scene glow
+    ctx.fillStyle='rgba(240,160,40,0.18)';ctx.fillRect(cx-16,cy+6,92,38);
+    // Path through clearing
+    f('#4a3020',200,54,80,H-54); f('#3a2410',210,58,60,H-58);
+    // Footprints (small pairs)
+    ctx.fillStyle='#2a1808';[214,60,218,66,214,72,218,78,214,84].forEach((v,i,a)=>{if(i%2===0){ctx.fillRect(a[i],a[i+1],3,4);ctx.fillRect(a[i]+5,a[i+1]+2,3,4);}});
+  }
+}
+
+// ─── CHARACTER SPRITE ─────────────────────────────────────────
+function drawChar(ctx,screenX,frame,CH){
+  const S=4,groundY=Math.round(CH*0.85);
+  const x=screenX,y=groundY-11*S;
+  const px=(dx,dy,c)=>{ctx.fillStyle=c;ctx.fillRect(x+dx*S,y+dy*S,S,S);};
+  const SKIN='#f0b870',HAIR='#2a1808',COAT='#4a4030',PANTS='#2a3048',BOOT='#201008',PACK='#5a3820';
+  px(1,0,HAIR);px(2,0,HAIR);px(3,0,HAIR);
+  px(1,1,SKIN);px(2,1,SKIN);px(3,1,SKIN);
+  px(1,2,SKIN);px(2,2,SKIN);px(3,2,SKIN);
+  px(4,2,PACK);px(4,3,PACK);px(4,4,PACK);px(5,3,PACK);
+  px(1,3,COAT);px(2,3,COAT);px(3,3,COAT);
+  px(1,4,COAT);px(2,4,COAT);px(3,4,COAT);
+  px(1,5,COAT);px(2,5,COAT);px(3,5,COAT);
+  if(frame===0){px(0,3,COAT);}else{px(0,4,COAT);}
+  if(frame===0){
+    px(1,6,PANTS);px(1,7,PANTS);px(1,8,PANTS);px(0,9,BOOT);px(1,9,BOOT);
+    px(3,6,PANTS);px(3,7,PANTS);px(3,8,PANTS);px(3,9,BOOT);px(4,9,BOOT);
+  }else{
+    px(1,6,PANTS);px(2,6,PANTS);px(2,7,PANTS);px(2,8,PANTS);px(1,9,BOOT);px(2,9,BOOT);
+    px(3,6,PANTS);px(3,7,PANTS);px(3,8,PANTS);px(4,8,PANTS);px(3,9,BOOT);px(4,9,BOOT);
+  }
+}
+
+// ─── CABIN PIXEL ART ─────────────────────────────────────────
+const P=5;
+function r(ctx,x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x*P,y*P,w*P,h*P);}
+function p(ctx,x,y,c){ctx.fillStyle=c;ctx.fillRect(x*P,y*P,P,P);}
+function drawMin(ctx){r(ctx,0,0,32,14,'#f5f0ea');r(ctx,0,14,32,10,'#e8ddd0');r(ctx,0,13,32,1,'#d4c9bc');for(let i=0;i<32;i+=5)r(ctx,i,14,1,10,'#ddd2c4');r(ctx,11,1,10,9,'#c8e8f4');r(ctx,11,1,10,1,'#a8a09a');r(ctx,11,9,10,1,'#a8a09a');r(ctx,11,1,1,9,'#a8a09a');r(ctx,20,1,1,9,'#a8a09a');r(ctx,15,1,1,9,'#a8a09a');r(ctx,11,5,10,1,'#a8a09a');r(ctx,7,16,16,2,'#c8b09a');r(ctx,7,18,2,4,'#b89880');r(ctx,21,18,2,4,'#b89880');r(ctx,14,14,5,2,'#ddc8a8');r(ctx,15,13,3,1,'#ddc8a8');r(ctx,27,11,3,3,'#c8a870');r(ctx,28,9,1,3,'#4a7a38');r(ctx,27,10,1,1,'#3d6830');r(ctx,29,10,1,1,'#4a7a38');}
+function drawJap(ctx){r(ctx,0,0,32,14,'#f0e6d4');r(ctx,0,14,32,10,'#c0895a');for(let i=0;i<32;i+=4)r(ctx,i,14,1,10,'#a87848');r(ctx,0,13,32,1,'#8b5e38');r(ctx,9,0,14,13,'#ffecd8');for(let i=0;i<5;i++)r(ctx,9+Math.round(i*3.5),0,1,13,'#d4a870');for(let j=0;j<13;j+=4)r(ctx,9,j,14,1,'#d4a870');r(ctx,9,0,14,1,'#8b5e38');r(ctx,9,12,14,1,'#8b5e38');r(ctx,9,0,1,13,'#8b5e38');r(ctx,22,0,1,13,'#8b5e38');r(ctx,26,2,4,7,'#fff0a0');r(ctx,27,1,2,1,'#8b5e38');r(ctx,26,9,4,1,'#8b5e38');r(ctx,27,4,2,4,'#ffe860');p(ctx,28,3,'#ffd060');r(ctx,7,17,14,1,'#8b5e38');r(ctx,5,18,6,5,'#d4a858');r(ctx,6,19,4,3,'#c09040');r(ctx,1,10,3,4,'#7b5030');r(ctx,2,8,1,2,'#3d7030');r(ctx,1,9,1,1,'#3d7030');r(ctx,3,9,1,1,'#3d7030');}
+function drawWab(ctx){r(ctx,0,0,32,14,'#c8b89a');r(ctx,0,14,32,10,'#9a8060');r(ctx,0,14,7,5,'#8b7050');r(ctx,9,17,8,4,'#8b7050');r(ctx,20,14,6,6,'#8b7050');r(ctx,0,20,10,4,'#8b7050');r(ctx,14,19,8,5,'#8b7050');r(ctx,25,18,7,6,'#8b7050');r(ctx,6,2,1,5,'#b0a08a');r(ctx,6,6,3,1,'#b0a08a');r(ctx,22,4,1,4,'#b0a08a');r(ctx,22,7,2,1,'#b0a08a');r(ctx,12,1,8,8,'#a8c0c8');r(ctx,12,1,8,1,'#7a6040');r(ctx,12,8,8,1,'#7a6040');r(ctx,12,1,1,8,'#7a6040');r(ctx,19,1,1,8,'#7a6040');r(ctx,3,15,6,7,'#9a6838');r(ctx,2,16,1,5,'#9a6838');r(ctx,9,16,1,5,'#9a6838');r(ctx,11,17,5,5,'#7a5028');r(ctx,10,18,1,3,'#7a5028');r(ctx,16,18,1,3,'#7a5028');r(ctx,17,19,3,3,'#c88040');r(ctx,26,8,2,5,'#7a6040');p(ctx,24,7,'#6a5030');p(ctx,25,6,'#6a5030');p(ctx,27,6,'#6a5030');p(ctx,28,7,'#6a5030');r(ctx,20,13,10,1,'#7a6040');}
+function drawCot(ctx){r(ctx,0,0,32,14,'#fdf5e4');r(ctx,0,14,32,10,'#c8a868');for(let i=0;i<32;i+=5)r(ctx,i,14,1,10,'#b09050');r(ctx,0,13,32,1,'#a07838');r(ctx,11,0,10,10,'#c0e4f8');r(ctx,11,0,10,1,'#8b5e30');r(ctx,11,9,10,1,'#8b5e30');r(ctx,11,0,1,10,'#8b5e30');r(ctx,20,0,1,10,'#8b5e30');r(ctx,15,0,1,10,'#8b5e30');r(ctx,8,0,4,11,'#e8809a');r(ctx,20,0,4,11,'#e8809a');r(ctx,9,1,2,9,'#f090a8');r(ctx,21,1,2,9,'#f090a8');r(ctx,12,8,2,3,'#c07040');p(ctx,12,7,'#d84060');p(ctx,13,6,'#e85070');p(ctx,14,7,'#d84060');r(ctx,17,8,2,3,'#c07040');p(ctx,17,7,'#3a9838');p(ctx,18,6,'#4ab848');p(ctx,19,7,'#3a9838');r(ctx,1,4,8,10,'#a07840');r(ctx,1,9,8,1,'#8b5e30');r(ctx,1,13,8,1,'#8b5e30');r(ctx,2,5,1,4,'#d04040');r(ctx,3,5,1,4,'#4060c0');r(ctx,4,5,1,4,'#40a040');r(ctx,5,5,2,4,'#c0a030');r(ctx,2,10,2,3,'#e08090');r(ctx,4,10,1,3,'#8040c0');r(ctx,5,10,2,3,'#40b098');r(ctx,23,17,7,1,'#a07840');r(ctx,23,18,1,5,'#8b5e30');r(ctx,29,18,1,5,'#8b5e30');r(ctx,24,14,4,3,'#c07040');r(ctx,23,15,1,1,'#a05828');r(ctx,27,13,2,1,'#a05828');r(ctx,28,13,1,2,'#a05828');}
+function drawCoa(ctx){r(ctx,0,0,32,14,'#eaf4f8');r(ctx,0,14,32,10,'#e0d0b0');for(let i=0;i<32;i+=4)r(ctx,i,14,1,10,'#d0c0a0');r(ctx,0,13,32,1,'#c0b090');r(ctx,7,0,14,12,'#6ab4d0');r(ctx,7,0,14,4,'#a8d8f0');r(ctx,7,0,14,1,'#b0b0b0');r(ctx,7,11,14,1,'#b0b0b0');r(ctx,7,0,1,12,'#b0b0b0');r(ctx,20,0,1,12,'#b0b0b0');r(ctx,8,6,12,1,'#50a0c0');r(ctx,8,8,12,1,'#50a0c0');r(ctx,8,10,12,1,'#50a0c0');r(ctx,4,0,4,13,'#f4ede0');r(ctx,5,0,2,13,'#f8f0e8');r(ctx,22,0,4,13,'#f4ede0');r(ctx,23,0,2,13,'#f8f0e8');r(ctx,1,11,5,1,'#c0a060');p(ctx,2,10,'#e8c890');p(ctx,3,10,'#d4b8a0');p(ctx,4,10,'#f0d8b0');r(ctx,4,18,18,6,'#e8e0d0');r(ctx,4,19,18,1,'#6ab4d0');r(ctx,4,21,18,1,'#6ab4d0');r(ctx,4,22,18,1,'#c8b890');r(ctx,24,14,7,9,'#f0ebe0');r(ctx,24,14,7,2,'#e0dbd0');r(ctx,24,14,1,9,'#e0dbd0');}
+function drawMax(ctx){r(ctx,0,0,32,14,'#2a1845');r(ctx,0,14,32,10,'#8a4828');r(ctx,0,13,32,1,'#6a3818');r(ctx,2,16,20,8,'#b83838');r(ctx,3,17,18,6,'#c85830');r(ctx,5,18,14,4,'#b83838');r(ctx,7,19,10,2,'#d87840');r(ctx,2,1,5,6,'#c8a030');r(ctx,3,2,3,4,'#4080c0');r(ctx,8,2,4,4,'#c83050');r(ctx,9,3,2,2,'#f0c020');r(ctx,13,1,3,5,'#30a038');r(ctx,14,2,1,3,'#f0c020');r(ctx,17,3,5,3,'#d05028');r(ctx,18,4,3,1,'#f8d840');r(ctx,22,0,8,12,'#7030a0');r(ctx,23,1,6,10,'#c050c0');r(ctx,24,2,4,8,'#e070d0');r(ctx,0,10,3,4,'#6a4020');r(ctx,0,7,2,3,'#2a6830');r(ctx,2,6,1,4,'#389038');r(ctx,29,8,3,6,'#8a5e30');r(ctx,28,4,2,5,'#2a6830');r(ctx,30,5,2,4,'#2a6830');r(ctx,5,14,4,2,'#c0a030');r(ctx,5,12,3,2,'#4060b0');r(ctx,6,11,2,1,'#c83050');}
+function drawInd(ctx){r(ctx,0,0,32,24,'#201810');for(let row=0;row<14;row++){const off=(row%2)*3;for(let col=-off;col<32;col+=6){r(ctx,Math.max(0,col),row,5,1,row%4===0?'#5a3828':row%3===0?'#4a2c1e':'#523020');}}r(ctx,0,14,32,10,'#2a2018');for(let i=0;i<32;i+=4)r(ctx,i,14,1,10,'#201808');r(ctx,0,13,32,1,'#181008');r(ctx,0,4,28,1,'#808080');r(ctx,0,5,28,1,'#606060');r(ctx,27,4,1,8,'#707070');r(ctx,0,3,28,1,'#909090');r(ctx,13,0,2,4,'#707070');r(ctx,11,4,6,6,'#f0d050');r(ctx,12,4,4,5,'#f8e880');r(ctx,13,4,2,5,'#fff8a0');r(ctx,12,9,4,1,'#707070');r(ctx,2,8,11,1,'#606060');r(ctx,2,9,1,5,'#505050');r(ctx,12,9,1,5,'#505050');r(ctx,3,6,1,2,'#8b3020');r(ctx,4,5,1,3,'#3050a0');r(ctx,5,6,1,2,'#707070');r(ctx,6,5,2,3,'#405028');r(ctx,9,6,2,2,'#c8a020');r(ctx,23,17,7,1,'#707070');r(ctx,23,18,1,5,'#505050');r(ctx,29,18,1,5,'#505050');r(ctx,23,22,7,1,'#404040');}
+function drawDar(ctx){r(ctx,0,0,32,24,'#120c04');r(ctx,0,14,32,10,'#2a1c08');for(let i=0;i<32;i+=5)r(ctx,i,14,1,10,'#201408');r(ctx,0,13,32,1,'#1a1006');r(ctx,0,0,9,14,'#2a1c08');r(ctx,0,0,9,1,'#3a2810');r(ctx,0,5,9,1,'#3a2810');r(ctx,0,10,9,1,'#3a2810');r(ctx,8,0,1,14,'#3a2810');r(ctx,1,1,1,4,'#8a1818');r(ctx,2,1,1,4,'#182a6a');r(ctx,3,2,1,3,'#3a6018');r(ctx,4,1,2,4,'#6a3018');r(ctx,6,1,1,4,'#8a183a');r(ctx,1,6,2,4,'#184a38');r(ctx,3,6,1,4,'#4a2888');r(ctx,4,7,1,3,'#8a6018');r(ctx,5,6,1,4,'#8a1818');r(ctx,6,7,2,3,'#183878');r(ctx,1,11,1,3,'#5a1818');r(ctx,2,11,2,3,'#184058');r(ctx,4,11,1,3,'#3a2068');r(ctx,5,12,2,2,'#7a4018');r(ctx,23,0,9,14,'#2a1c08');r(ctx,23,0,9,1,'#3a2810');r(ctx,23,6,9,1,'#3a2810');r(ctx,23,0,1,14,'#3a2810');r(ctx,24,1,1,5,'#8a1818');r(ctx,25,2,1,4,'#2a6018');r(ctx,26,1,2,5,'#182880');r(ctx,28,2,2,4,'#6a1838');r(ctx,24,7,2,7,'#3a2010');r(ctx,26,7,1,7,'#5a1818');r(ctx,27,8,2,6,'#183848');r(ctx,29,7,1,7,'#6a4018');r(ctx,30,8,1,6,'#2a5038');r(ctx,10,8,12,6,'#1e1206');r(ctx,10,16,14,1,'#3a2008');r(ctx,10,17,1,7,'#281808');r(ctx,23,17,1,7,'#281808');r(ctx,15,13,2,1,'#f8e8a0');r(ctx,15,14,2,1,'#f0d860');r(ctx,15,15,2,1,'#e8c8a0');r(ctx,15,16,2,1,'#b09060');p(ctx,15,12,'#fff8b0');p(ctx,16,11,'#ffffff');r(ctx,11,14,10,2,'#f0e8d0');r(ctx,15,14,1,2,'#8b5e30');r(ctx,12,14,3,1,'#c0b090');r(ctx,16,14,3,1,'#c0b090');}
+
+// ─── PIXEL TREES (intro) ─────────────────────────────────────
+function drawTree(cv){const ctx=cv.getContext('2d'),T=4;const f=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x*T,y*T,w*T,h*T);};f(2,0,2,2,'#2d5c28');f(1,2,4,2,'#2d5c28');f(0,4,6,2,'#3a7030');f(0,6,6,2,'#2d5c28');f(1,7,4,1,'#2d5c28');f(2,8,2,4,'#5a3820');f(4,1,1,1,'#1e3d1a');f(5,4,1,2,'#1e3d1a');}
+['t1','t2','t3'].forEach(id=>drawTree(document.getElementById(id)));
+</script>
